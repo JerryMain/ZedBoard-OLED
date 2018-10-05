@@ -86,6 +86,31 @@ architecture behavioral of oled_ex is
     -- Variable that contains what the screen will be after the next UpdateScreen state
     signal current_screen : oled_mem;
 
+    -- Function to resize any string to 64 characters
+    function resize_string_to_64 (stringIn : string) return string is
+        variable new_string : string (1 to 64);
+    begin
+        if(stringIn'length < 64) then
+            new_string(1 to stringIn'length) := stringIn;
+            new_string(stringIn'length + 1 to 64) := (others => nul);
+        else
+            new_string := stringIn(1 to 64);
+        end if;
+        return new_string;
+    end resize_string_to_64;
+
+    -- Function to transform a 64 character string to screen content
+    function string_to_oled_mem (stringIn : string(1 to 64)) return oled_mem is
+        variable new_oled_mem : oled_mem;
+    begin
+        for row in 0 to 3 loop
+            for column in 0 to 15 loop
+                new_oled_mem(row, column) := std_logic_vector(to_unsigned(character'pos(stringIn(column + row * 16 + 1)), 8));
+            end loop;
+        end loop;
+        return new_oled_mem;
+    end string_to_oled_mem;
+
     -- Constant that contains the screen filled with the Alphabet and numbers
     constant alphabet_screen : oled_mem := ((x"41", x"42", x"43", x"44", x"45", x"46", x"47", x"48", x"49", x"4A", x"4B", x"4C", x"4D", x"4E", x"4F", x"50"),
                                             (x"51", x"52", x"53", x"54", x"55", x"56", x"57", x"58", x"59", x"5A", x"61", x"62", x"63", x"64", x"65", x"66"),
@@ -93,16 +118,10 @@ architecture behavioral of oled_ex is
                                             (x"77", x"78", x"79", x"7A", x"30", x"31", x"32", x"33", x"34", x"35", x"36", x"37", x"38", x"39", x"7F", x"7F"));
 
     -- Constant that fills the screen with blank (spaces) entries
-    constant clear_screen : oled_mem := (   (x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20"),
-                                            (x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20"),
-                                            (x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20"),
-                                            (x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20"));
+    constant clear_screen : oled_mem := string_to_oled_mem(resize_string_to_64(""));
 
     -- Constant that holds "Hello world!"
-    constant hello_world_screen : oled_mem := ( (x"48", x"65", x"6c", x"6c", x"6f", x"20", x"77", x"6f", x"72", x"6c", x"64", x"21", x"20", x"20", x"20", x"20"),
-                                                (x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20"),
-                                                (x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20"),
-                                                (x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20", x"20"));
+    constant hello_world_screen : oled_mem := string_to_oled_mem(resize_string_to_64("Hello World!"));
 
     -- Current overall state of the state machine
     signal current_state : states := Idle;
